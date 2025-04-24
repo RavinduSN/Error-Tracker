@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Error Tracker</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f7f7f7;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: auto;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    form input, form textarea {
+      width: 100%;
+      margin-bottom: 10px;
+      padding: 10px;
+    }
+
+    form button {
+      background-color: #28a745;
+      color: white;
+      border: none;
+      padding: 10px;
+      cursor: pointer;
+    }
+
+    form button:hover {
+      background-color: #218838;
+    }
+
+    #errorList li {
+      background-color: #f1f1f1;
+      padding: 10px;
+      margin-top: 10px;
+      list-style: none;
+      border-left: 5px solid #dc3545;
+    }
+
+    #errorList li span {
+      display: block;
+      font-weight: bold;
+    }
+
+    .delete-btn {
+      color: red;
+      cursor: pointer;
+      float: right;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Error Tracker</h1>
+    
+    <form id="errorForm">
+      <input type="text" id="errorTitle" placeholder="Error Title" required>
+      <textarea id="errorDescription" placeholder="Describe the error..." required></textarea>
+      <button type="submit">Add Error</button>
+    </form>
+
+    <h2>Tracked Errors</h2>
+    <ul id="errorList"></ul>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const form = document.getElementById("errorForm");
+      const titleInput = document.getElementById("errorTitle");
+      const descInput = document.getElementById("errorDescription");
+      const errorList = document.getElementById("errorList");
+
+      const loadErrors = () => {
+        const errors = JSON.parse(localStorage.getItem("errors")) || [];
+        errorList.innerHTML = "";
+
+        errors.forEach((error, index) => {
+          const li = document.createElement("li");
+          li.innerHTML = `
+            <span>${error.title}</span>
+            ${error.description}
+            <span class="delete-btn" data-index="${index}">✖</span>
+          `;
+          errorList.appendChild(li);
+        });
+      };
+
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const title = titleInput.value.trim();
+        const description = descInput.value.trim();
+        if (!title || !description) return;
+
+        const errors = JSON.parse(localStorage.getItem("errors")) || [];
+        errors.push({ title, description });
+        localStorage.setItem("errors", JSON.stringify(errors));
+
+        titleInput.value = "";
+        descInput.value = "";
+        loadErrors();
+      });
+
+      errorList.addEventListener("click", (e) => {
+        if (e.target.classList.contains("delete-btn")) {
+          const index = e.target.getAttribute("data-index");
+          const errors = JSON.parse(localStorage.getItem("errors")) || [];
+          errors.splice(index, 1);
+          localStorage.setItem("errors", JSON.stringify(errors));
+          loadErrors();
+        }
+      });
+
+      loadErrors();
+    });
+  </script>
+</body>
+</html>
