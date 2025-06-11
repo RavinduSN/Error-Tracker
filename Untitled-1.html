@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Error Tracker</title>
+  <title>Error Tracker with SLA</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -43,6 +43,7 @@
       margin-top: 10px;
       list-style: none;
       border-left: 5px solid #dc3545;
+      position: relative;
     }
 
     #errorList li span {
@@ -53,7 +54,28 @@
     .delete-btn {
       color: red;
       cursor: pointer;
-      float: right;
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      font-weight: bold;
+    }
+
+    .sla-info {
+      font-size: 0.9em;
+      color: #555;
+      margin-top: 5px;
+    }
+
+    .sla-overdue {
+      border-left: 5px solid red !important;
+    }
+
+    .sla-24h {
+      border-left: 5px solid orange;
+    }
+
+    .sla-48h {
+      border-left: 5px solid green;
     }
   </style>
 </head>
@@ -78,15 +100,39 @@
       const descInput = document.getElementById("errorDescription");
       const errorList = document.getElementById("errorList");
 
+      const getAgeLabel = (createdAt) => {
+        const ageMs = Date.now() - createdAt;
+        const ageHrs = Math.floor(ageMs / (1000 * 60 * 60));
+        if (ageHrs < 24) return "sla-24h";
+        if (ageHrs < 48) return "sla-48h";
+        return "sla-overdue";
+      };
+
+      const getAgeLabelText = (label) => {
+        switch (label) {
+          case "sla-24h": return "sla/24h";
+          case "sla-48h": return "sla/48h";
+          case "sla-overdue": return "sla/overdue";
+          default: return "unknown";
+        }
+      };
+
       const loadErrors = () => {
         const errors = JSON.parse(localStorage.getItem("errors")) || [];
         errorList.innerHTML = "";
 
         errors.forEach((error, index) => {
+          const ageLabel = getAgeLabel(error.createdAt);
+          const ageLabelText = getAgeLabelText(ageLabel);
           const li = document.createElement("li");
+          li.classList.add(ageLabel);
+
           li.innerHTML = `
             <span>${error.title}</span>
             ${error.description}
+            <div class="sla-info">
+              SLA: ${ageLabelText} | Created: ${new Date(error.createdAt).toLocaleString()}
+            </div>
             <span class="delete-btn" data-index="${index}">✖</span>
           `;
           errorList.appendChild(li);
@@ -100,7 +146,11 @@
         if (!title || !description) return;
 
         const errors = JSON.parse(localStorage.getItem("errors")) || [];
-        errors.push({ title, description });
+        errors.push({
+          title,
+          description,
+          createdAt: Date.now()
+        });
         localStorage.setItem("errors", JSON.stringify(errors));
 
         titleInput.value = "";
@@ -112,6 +162,13 @@
         if (e.target.classList.contains("delete-btn")) {
           const index = e.target.getAttribute("data-index");
           const errors = JSON.parse(localStorage.getItem("errors")) || [];
+          const deletedAt = Date.now();
+          const createdAt = errors[index].createdAt;
+          const durationHrs = Math.round((deletedAt - createdAt) / (1000 * 60 * 60));
+          const slaLabel = getAgeLabel(createdAt);
+          const slaText = getAgeLabelText(slaLabel);
+          alert(`Issue resolved in ${durationHrs} hour(s). SLA label was: ${slaText}`);
+
           errors.splice(index, 1);
           localStorage.setItem("errors", JSON.stringify(errors));
           loadErrors();
